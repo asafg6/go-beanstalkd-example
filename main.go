@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-func ProducerMain() {
+func ProducerMain(tubes []string) {
 	var comments = []Comment{
 		{UserName: "some_user", Text:"i love your cat", Date: time.Now()},
 		{UserName: "some_other_user", Text:"i prefer dogs", Date: time.Now()},
@@ -17,17 +17,21 @@ func ProducerMain() {
 	producer := MakeNewProducer("localhost:11300", protocol)
 	producer.Connect()
 	defer producer.Close()
-	for _, comment := range comments {
-		producer.PutComment(&comment)
+
+	for _, tube := range tubes {
+		producer.UseTube(tube)
+		for _, comment := range comments {
+			producer.PutComment(&comment)
+		}
 	}
+
 }
 
-func WorkerMain() {
+func WorkerMain(commentsDir string, tube string) {
 	protocol := MakeJsonCommentProtocol()
-	commentsDir := "./comments"
 	os.Mkdir(commentsDir, 0777)
 	processor := MakeNewCommentProcessor(commentsDir)
-	worker := MakeNewWorker("localhost:11300", protocol, processor)
+	worker := MakeNewWorker("localhost:11300", protocol, processor, tube)
 	worker.Connect()
 	defer worker.Close()
 	for {
@@ -45,10 +49,12 @@ func main() {
 	if len(os.Args) < 2 {
 		printUsage()
 	}
-	if os.Args[1] == "worker" {
-		WorkerMain()
+	if os.Args[1] == "worker1" {
+		WorkerMain("first_comments", "first")
+	} else if os.Args[1] == "worker2" {
+		WorkerMain("second_comments", "second")
 	} else if os.Args[1] == "producer" {
-		ProducerMain()
+		ProducerMain([]string{"first", "second"})
 	} else {
 		printUsage()
 	}

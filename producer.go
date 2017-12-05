@@ -10,6 +10,9 @@ type Producer struct {
 	protocol CommentProtocol
 }
 
+func (producer *Producer) UseTube(tubeName string) error {
+	return producer.serverConnection.Use(tubeName)
+}
 
 func (producer *Producer) PutComment(comment *Comment) error {
 	body, err := producer.protocol.Encode(comment)
